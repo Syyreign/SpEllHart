@@ -85,7 +85,6 @@ vec3 reflect_march(vec3 rayOrigin, vec3 rayDirection)
   {
     vec3 pos = rayOrigin + rayDirection * rayDistance;
 
-    //float test_distance = scene(pos);
     closest_distance = scene(pos);
 
     if (closest_distance <= HIT_DISTANCE)
