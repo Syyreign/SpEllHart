@@ -14,9 +14,8 @@ varying vec3 vPosition;
 const vec3 LIGHT_POS = vec3(10.0, 10.0, -2.0);
 const float HIT_DISTANCE = 0.01;
 const int REFLECTS = 1;
-const vec3 CENTER_COL = vec3(0.0, 0.0, 0.0);
+const vec3 CENTER_COL = vec3(0.7, 0.6, 0.0);
 const vec3 EDGE_COL = vec3(0.95, 0.0, 0.0);
-const vec3 EDGE_COL_END = vec3(0.2, 0.2, 0.8);
 
 float smoothMin(float a, float b, float k)
 {
@@ -69,12 +68,11 @@ float diffuse(vec3 normal, vec3 lightDirection)
   return clamp(dot(normal, lightDirection), 0.0, 1.0);
 }
 
-vec3 get_color(vec3 normal, vec3 ray_direction, vec2 uv)
+vec3 get_color(vec3 normal, vec3 ray_direction)
 {
-  vec3 col = mix(EDGE_COL, EDGE_COL_END, uv.y);
+  float lerp = abs(dot(normal, ray_direction));
 
-  float alpha = abs(dot(normal, ray_direction));
-  return mix(col, CENTER_COL, alpha);
+  return (CENTER_COL * lerp) + (EDGE_COL * (1.0 - lerp));
 }
 
 vec3 reflect_march(vec3 rayOrigin, vec3 rayDirection)
@@ -104,7 +102,7 @@ vec3 reflect_march(vec3 rayOrigin, vec3 rayDirection)
   return vec3(1.0, 1.0, 1.0);
 }
 
-vec3 raymarch(vec3 rayOrigin, vec3 rayDirection, vec2 uv, out vec3 normal, out vec3 hit_pos)
+vec3 raymarch(vec3 rayOrigin, vec3 rayDirection, out vec3 normal, out vec3 hit_pos)
 {
   float rayDistance = 0.0;
   int maxMarches = 64;
@@ -125,22 +123,25 @@ vec3 raymarch(vec3 rayOrigin, vec3 rayDirection, vec2 uv, out vec3 normal, out v
       vec3 lightDirection = normalize(LIGHT_POS - hit_pos);
       float diffuseScale = clamp(diffuse(normal, lightDirection), 0.2, 1.0);
       
-      return get_color(normal, rayDirection, uv) * diffuseScale;
+      //vec3 col = vec3(1.0, 0.0, 0.0);
+      //col = reflect_march(pos + (normal * 0.1) , normal);
+
+      //return ((vec3(1.0, 0.0, 0.0) * 0.6) + (col * 0.4)) * diffuseScale;
+      return get_color(normal, rayDirection) * diffuseScale;
     }
 
     rayDistance += dist;
   }
-  
-  vec3 col = mix(EDGE_COL, EDGE_COL_END, uv.y);
 
-  float alpha = 1.0 - (min(closest_distance, 0.5) / 0.5);
-  return col * alpha;
+  float lerp = 1.0 - (min(closest_distance, 0.5) / 0.5);
+  
+  return EDGE_COL * lerp;
 }
 
-vec3 raymarch(vec3 rayOrigin, vec3 rayDirection, vec2 uv)
+vec3 raymarch(vec3 rayOrigin, vec3 rayDirection)
 {
   vec3 normal, hit_pos;
-  vec3 col = raymarch(rayOrigin, rayDirection, uv, normal, hit_pos);
+  vec3 col = raymarch(rayOrigin, rayDirection, normal, hit_pos);
   return col;
 }
 
@@ -156,7 +157,7 @@ void main()
   vec4 col;// = vec4(raymarch(rayOrigin, rayDirection, normal, hit_pos), 1.0);
   for (int i = 0; i < 1; i++)
   {
-    col += vec4(raymarch(rayOrigin, rayDirection, uv, rayDirection, rayOrigin), 1.0);
+    col += vec4(raymarch(rayOrigin, rayDirection, rayDirection, rayOrigin), 1.0);
   }
 
   gl_FragColor = vec4(col);
